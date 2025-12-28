@@ -73,8 +73,11 @@ See
 src/submission_generation.ipynb
 ```
 
-# Acknowledgement
+# Other work:
+Check out my other work in other Waymo Open Dataset Challenges [https://github.com/hansungkim98122/OpenEMMA-for-Waymo-E2E](https://github.com/hansungkim98122/OpenEMMA-for-Waymo-E2E)
+
+# Acknowledgement:
 The majority of the code is from [SMART](https://github.com/rainmaker22/SMART)
 
-# License
+# License:
 All code in this repository is licensed under the Apache License 2.0.
