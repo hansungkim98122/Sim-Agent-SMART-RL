@@ -592,8 +592,8 @@ def decode_map_features_from_proto(map_features):
     except:
         polylines = np.zeros((0, 8), dtype=np.float32)
         print('Empty polylines: ')
-        print(len(map_features))
-        return 
+
+
     map_infos['all_polylines'] = polylines
     map_infos['lane2other_dict'] = lane2other_dict
     return map_infos
@@ -669,60 +669,64 @@ def wm2argo(file, dir_name, output_dir,codebook_dir):
     my_list = list(dataset_iterator)
     print(len(my_list))
     for cnt, data in enumerate(dataset):
-        scenario = scenario_pb2.Scenario()
-        # if isinstance(data, (bytes, bytearray)):
-        #     s = scenario_pb2.Scenario()
-        #     s.ParseFromString(item)
-        #     return s
-        scenario.ParseFromString(bytes(data.numpy()))
-        #augment original scenario with camera data
-        # camera_file = CAMERA_FILES + f'{scenario.scenario_id}.tfrecord' 
-        # #check if camera_file exists
-        # if not os.path.isfile(camera_file):
-        #     print(f'Skipping scenario {scenario.scenario_id} because it doesnt have camera frames')
-        #     continue
-        # camera_dataset = tf.data.TFRecordDataset(camera_file, compression_type='')
+        try:
+            scenario = scenario_pb2.Scenario()
+            scenario.ParseFromString(bytes(data.numpy()))
+            if scenario.scenario_id in ['b9634de6c7853675', 'd2cf6ee2f69ba99b', '5b272e84d15d14d', 'fb331b25175bf208', 'dac737e507d526b']:
+                print(f'Found: {scenario.scenario_id}')
+            filename = os.path.join(output_dir,scenario.scenario_id +'.pkl')
+            if os.path.isfile(filename): continue
 
-        # camera_data = next(iter(camera_dataset))
-        # womd_camera_scenario = scenario_pb2.Scenario.FromString(camera_data.numpy())
-        # scenario = womd_camera_utils.add_camera_tokens_to_scenario(
-        #     scenario, womd_camera_scenario)
-        save_infos = process_single_data(scenario) # pkl2mtr
-        map_info = save_infos["map_infos"]
-        track_info = save_infos['track_infos']
-        scenario_id = save_infos['scenario_id']
-        tracks_to_predict = save_infos['tracks_to_predict']
-        sdc_track_index = save_infos['sdc_track_index']
-        av_id = track_info["object_id"][sdc_track_index]
-        if len(tracks_to_predict["track_index"]) < 1:
-            return
-        dynamic_map_infos = save_infos["dynamic_map_infos"]
-        tf_lights = process_dynamic_map(dynamic_map_infos)
-        tf_current_light = tf_lights.loc[tf_lights["time_step"] == "11"]
-        map_data = get_map_features(map_info, tf_current_light)
-        new_agents_array = process_agent(track_info, tracks_to_predict, sdc_track_index, scenario_id, 0, 91) # mtr2argo
-        data = dict()
-        data['scenario_id'] = new_agents_array['scenario_id'].values[0]
-        # # Extract Camera Embeddings
-        # cur_frame_index = 0
-        # time_seq_camera_embeddings = []
-        # while (cur_frame_index < 11):
-        #     camera_embeddings = []
-        #     for camera_tokens in scenario.frame_camera_tokens[cur_frame_index].camera_tokens:
-        #         tokens = np.array(camera_tokens.tokens, dtype=int)
-        #         embedding = womd_camera_utils.get_camera_embedding_from_codebook(
-        #             womd_camera_codebook, tokens
-        #         )
-        #         camera_embeddings.append(embedding)
-        #     time_seq_camera_embeddings.append(np.array(camera_embeddings))
-        #     cur_frame_index+=5
-        
-        data['city'] = new_agents_array['city'].values[0]
-        data['agent'] = get_agent_features(new_agents_array, av_id, num_historical_steps=11)
-        data.update(map_data)
-        # data['camera_embeddings'] = torch.tensor(np.array(time_seq_camera_embeddings))
-        with open(os.path.join(output_dir, scenario_id + '.pkl'), "wb+") as f:
-            pickle.dump(data, f)
+            #augment original scenario with camera data
+            # camera_file = CAMERA_FILES + f'{scenario.scenario_id}.tfrecord' 
+            # #check if camera_file exists
+            # if not os.path.isfile(camera_file):
+            #     print(f'Skipping scenario {scenario.scenario_id} because it doesnt have camera frames')
+            #     continue
+            # camera_dataset = tf.data.TFRecordDataset(camera_file, compression_type='')
+
+            # camera_data = next(iter(camera_dataset))
+            # womd_camera_scenario = scenario_pb2.Scenario.FromString(camera_data.numpy())
+            # scenario = womd_camera_utils.add_camera_tokens_to_scenario(
+            #     scenario, womd_camera_scenario)
+            save_infos = process_single_data(scenario) # pkl2mtr
+            map_info = save_infos["map_infos"]
+            track_info = save_infos['track_infos']
+            scenario_id = save_infos['scenario_id']
+            tracks_to_predict = save_infos['tracks_to_predict']
+            sdc_track_index = save_infos['sdc_track_index']
+            av_id = track_info["object_id"][sdc_track_index]
+            if len(tracks_to_predict["track_index"]) < 1:
+                return
+            dynamic_map_infos = save_infos["dynamic_map_infos"]
+            tf_lights = process_dynamic_map(dynamic_map_infos)
+            tf_current_light = tf_lights.loc[tf_lights["time_step"] == "11"]
+            map_data = get_map_features(map_info, tf_current_light)
+            new_agents_array = process_agent(track_info, tracks_to_predict, sdc_track_index, scenario_id, 0, 91) # mtr2argo
+            data = dict()
+            data['scenario_id'] = new_agents_array['scenario_id'].values[0]
+            # # Extract Camera Embeddings
+            # cur_frame_index = 0
+            # time_seq_camera_embeddings = []
+            # while (cur_frame_index < 11):
+            #     camera_embeddings = []
+            #     for camera_tokens in scenario.frame_camera_tokens[cur_frame_index].camera_tokens:
+            #         tokens = np.array(camera_tokens.tokens, dtype=int)
+            #         embedding = womd_camera_utils.get_camera_embedding_from_codebook(
+            #             womd_camera_codebook, tokens
+            #         )
+            #         camera_embeddings.append(embedding)
+            #     time_seq_camera_embeddings.append(np.array(camera_embeddings))
+            #     cur_frame_index+=5
+            
+            data['city'] = new_agents_array['city'].values[0]
+            data['agent'] = get_agent_features(new_agents_array, av_id, num_historical_steps=11)
+            data.update(map_data)
+            # data['camera_embeddings'] = torch.tensor(np.array(time_seq_camera_embeddings))
+            with open(os.path.join(output_dir, scenario_id + '.pkl'), "wb+") as f:
+                pickle.dump(data, f)
+        except:
+            continue
 
 def batch_process9s_transformer(dir_name, output_dir, code_book_dir, num_workers=2):
     from functools import partial
